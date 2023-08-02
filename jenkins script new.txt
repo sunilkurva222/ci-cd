@@ -1,0 +1,42 @@
+pipeline{
+    agent any
+    tools {
+  maven 'maven'
+    }
+    stages{
+        stage('checkout'){
+            steps{
+                checkout scmGit(branches: [[name: '*/main']], extensions: [], userRemoteConfigs: [[url: 'https://github.com/sunilkurva222/ci-cd.git']])
+            }
+        }
+        stage('build'){
+            steps{
+                sh 'mvn clean package'
+            }
+        }
+       stage('sonarQube'){
+    steps{
+       sh  "mvn clean sonar:sonar"
+         }
+   }
+ stage('nexus'){
+    steps{
+       sh  "mvn clean deploy"
+         }
+   }
+        // through tomcat server credentitals
+        /*
+   stage('deployTomcat'){
+    steps{
+deploy adapters: [tomcat9(credentialsId: 'tomcat', path: '', url: 'http://54.193.31.197:8080/')], contextPath: 'qenv', war: '**/*.war'
+    }
+   }
+*/
+//or deploy through the sshagent    
+stage('Tomcat Deploy'){
+            sshAgent[SSh]{
+                sh "scp -o StrictHostKeyChecking=no target/vprofile-v2.war ubuntu@pubip:/opt/apache-tomcat-9.078/webapps"
+            } 
+        }
+    }
+}
